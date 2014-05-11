@@ -1,4 +1,4 @@
-var VERSION = 0.1;
+var VERSION = 0.2;
 
 document.getElementById('version').innerHTML = VERSION;
 
@@ -113,6 +113,18 @@ function show(id) { get(id).style.opacity = 1; }
 function html(id, text) { get(id).innerHTML = text; }
 function addhighlight(id) { if (!(get(id).classList.contains('highlight'))) get(id).classList.add('highlight'); }
 function remhighlight(id) { if (get(id).classList.contains('highlight')) get(id).classList.remove('highlight'); }
+
+function drawRoundRect(ctx, x, y, w, h, r) {
+  if (w < 2 * r) r = w / 2;
+  if (h < 2 * r) r = h / 2;
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y,   x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x,   y+h, r);
+  ctx.arcTo(x,   y+h, x,   y,   r);
+  ctx.arcTo(x,   y,   x+w, y,   r);
+  ctx.closePath();
+}
 
 function rnd(min, max) { return (min + (Math.random() * (max - min))); } //returns a random number between min and max
 function rndArray(arr) { return arr.splice(rnd(0, arr.length), 1)[0]; } //return a random element grom the array
@@ -264,11 +276,11 @@ var Z = { blocks: [
 //constants
 var KEYS = {LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, A: 65, DEBUG: 192},		  
 	TIME_STYLE = {font: 'lighter 72px Lato, "Helvetica Neue",  sans-serif', fill: 'rgba(255,255,255,0.7)'}, // font style for time text
-	START_STYLE = {font: 'lighter 48px Lato, "Helvetica Neue", sans-serif', fill: 'rgba(255,255,255,1)'};   // and for start text
+	START_STYLE = {font: 'lighter 48px Lato, "Helvetica Neue", sans-serif', fill: 'rgba(255,255,255,0.9)'};   // and for start text
 	BLOCK_WIDTH = 32,							  // in pixels
 	BLOCK_HEIGHT = 32,
-	wellWidth = 10,								// width of the field in blocks
-	wellHeight = 18;							// height of the field in blocks
+	WELL_WIDTH = 10,								// width of the field in blocks
+	WELL_HEIGHT = 18;							// height of the field in blocks
 
 //objects
 var	canvas = get('game'),						// canvas html element
@@ -276,10 +288,12 @@ var	canvas = get('game'),						// canvas html element
 	images = {}, 								// object to hold images
 	playing = false,							// are we playing?
 	dt = 0,										// the number of milliseconds past since the last frame
-	well = null,								// 2 dimensional array [wellWidth x wellHeight] representing game field
+	well = null,								// 2 dimensional array [WELL_WIDTH x WELL_HEIGHT] representing game field
 	current = null,								// current piece {type: tetromino, x: x position, y: y position, rot: rotation (0 - 3)}
+	ghost = null,								// ghost piece, http://tetris.wikia.com/wiki/Ghost_piece
 	delayTime = 0;								// time (in milliseconds) since start of the game
 	delay = 1000,								// how long before drop (in milliseconds)
+	sscore = 0,
 	score = 0,
 	lines = 0;
 
@@ -298,7 +312,7 @@ function eachBlock(type, x, y, rot, callback) {
 function free(type, x, y, rot) {
 	var ret = true;
 	eachBlock(type, x, y, rot, function (x, y) {
-		if (x < 0 || x >= wellWidth || y < 0 || y >= wellHeight || getWell(x, y))
+		if (x < 0 || x >= WELL_WIDTH || y < 0 || y >= WELL_HEIGHT || getWell(x, y))
 			ret = false;
 	});
 	return ret;
@@ -311,7 +325,7 @@ function setWell(x, y, type) { well[x][y] = type; }
 
 function addScore(amount) { score += amount };
 function addLines(amount) { lines += amount; addScore(Math.pow(amount, 2)*100); }
-function gameOver() { playing = false; }
+function gameOver() { playing = false; sscore = score; }
 
 //drawing
 //draw text on canvas
@@ -324,8 +338,8 @@ function text(ctx, text, x, y, style) {
 function drawBlock(x, y, type) { ctx.drawImage(images[type.image], x*BLOCK_WIDTH, y*BLOCK_HEIGHT-8); }
 
 function drawWell() {
-	for (var x = 0; x < wellWidth; x++) {
-		for (var y = 0; y < wellHeight; y++) {
+	for (var x = 0; x < WELL_WIDTH; x++) {
+		for (var y = 0; y < WELL_HEIGHT; y++) {
 			if (well[x][y]) drawBlock(x, y, well[x][y]);
 		}
 	}
@@ -337,6 +351,15 @@ function drawCurrentPiece() {
 	});
 }
 
+function drawGhostPiece() {
+	eachBlock(current.type, ghost.x, ghost.y, current.rot, function (x, y) {
+		ctx.strokeStyle = 'white';
+		ctx.lineWidth = 2;
+		drawRoundRect(ctx, x*BLOCK_WIDTH + 5, (y-1)*BLOCK_HEIGHT-8 + 5, 32 - 10, 32 - 10, 6);
+		ctx.stroke();
+	});
+}
+
 //http://tetris.wikia.com/wiki/Random_Generator
 var bag = [];
 function getRandomPiece() {
@@ -344,6 +367,14 @@ function getRandomPiece() {
 		bag = [I, J, L, O, T, Z, S];
 	var type = rndArray(bag);
 	return {type: type, x: 3, y: 0, rot: 1};
+}
+
+function updateGhostPiece() {
+	if (!ghost) ghost = {};
+	ghost.x = current.x;
+	var y = current.y;
+	while(free(current.type, ghost.x, y, current.rot)) y++;
+	ghost.y = y;
 }
 
 function checkIfLine() {
@@ -368,13 +399,13 @@ function step() {
 function deleteLines() {
 	var x, y, lines = 0;
 	
-	for (y = wellHeight-1; y > 0; y--) {
+	for (y = WELL_HEIGHT-1; y > 0; y--) {
 		x = 0;
-		while (x < wellWidth) {
+		while (x < WELL_WIDTH) {
 			if (getWell(x, y) === null) break;
 			x++;
 		}
-		if (x === wellWidth) {
+		if (x === WELL_WIDTH) {
 			deleteLine(y);
 			lines++;
 			y++;
@@ -386,7 +417,7 @@ function deleteLines() {
 
 function deleteLine(line) {
 	for (var y = line; y > 0; y--) {
-		for (var x = 0; x < wellWidth; x++) {
+		for (var x = 0; x < WELL_WIDTH; x++) {
 			setWell(x, y, getWell(x, y-1));
 		}
 	}
@@ -502,11 +533,11 @@ function start() {
 }
 
 function reset() {
-	//create and init well[wellWidth x wellHeight] array
+	//create and init well[WELL_WIDTH x WELL_HEIGHT] array
 	well = [];
-	for (var i = 0; i < wellWidth; i++) {
+	for (var i = 0; i < WELL_WIDTH; i++) {
 		well[i] = [];
-		for (var j = 0; j < wellHeight; j++) {
+		for (var j = 0; j < WELL_HEIGHT; j++) {
 			well[i][j] = null;
 		}
 	}
@@ -514,9 +545,11 @@ function reset() {
 	dt = 0;
 	delayTime = 0;
 	score = 0;
+	sscore = 0;
 	lines = 0;
 	
 	current = getRandomPiece();
+	updateGhostPiece();
 }
 
 function update(dt) {
@@ -526,6 +559,11 @@ function update(dt) {
 			step();
 			delayTime = 0;
 		}
+		
+		if (sscore < score)
+			sscore++;
+		
+		updateGhostPiece();
 	}
 	
 	if (DEBUG) { 
@@ -543,12 +581,17 @@ function render() {
 	
 	drawWell();
 	
-	if (!playing) {	
+	if (!playing) {
+		//dim the light
+		ctx.fillStyle = 'rgba(0,0,0,0.5)';
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+		
 		text(ctx, 'click to start', 34, 510, START_STYLE);
 	} else {
 		drawCurrentPiece();
+		drawGhostPiece();
 	}
 	
-	html('score', score);
+	html('score', sscore);
 	html('lines', lines);
 }
