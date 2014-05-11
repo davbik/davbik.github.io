@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+	<head>
+		<link href='http://fonts.googleapis.com/css?family=Lato:300' rel='stylesheet' type='text/css'>
+		
+		<meta charset="utf-8">
+		
+		<title>ios7is</title>
+		
+		<link rel="stylesheet" href="style.css" />
+	</head>
+	<body>
+		<div id="wrapper">
+			<div id="controls">
+				<h1>ios7is v<span id="version"></span></h1>
+				<table>
+					<caption>Controls</caption>
+					<tr>
+						<td class="label">move left</td>
+						<td id='aleft' class="key">arrow left</td>
+					</tr>
+					<tr>
+						<td class="label">move right</td>
+						<td id='aright' class="key">arrow right</td>
+					</tr>
+					<tr>
+						<td class="label">rotate</td>
+						<td id='aup' class="key">arrow up</td>
+					</tr>
+					<tr>
+						<td class="label">soft drop</td>
+						<td id='adown' class="key">arrow down</td>
+					</tr>
+					<tr>
+						<td class="label">hard drop</td>
+						<td id='akey' class="key">a</td>
+					</tr>
+				</table>
+				<table>
+					<caption>Score Table</caption>
+					<tr>
+						<td class="label">score</td>
+						<td id="score" class="score">0</td>
+					</tr>
+					<tr>
+						<td class="label">lines</td>
+						<td id="lines" class="score">0</td>
+					</tr>
+				</table>
+				
+				<div id="debug">
+					<table>
+						<caption>Debug</caption>
+						<tr>
+							<td class="label">dt</td>
+							<td id="debug-dt" class="score">0</td>
+						</tr>
+						<tr>
+							<td class="label">delayTime</td>
+							<td id="debug-delayTime" class="score">0</td>
+						</tr>
+					</table>
+				</div>
+			</div>
+			<div id="container">
+				<img src="assets/iphone-new.png" alt="" />
+				<canvas id="game" width="320" height="568"></canvas>
+			</div>
+		</div>
+		<script src="ios7is.js"></script>
+	</body>
+</html>
