@@ -588,8 +588,8 @@ function render() {
 		
 		text(ctx, 'click to start', 34, 510, START_STYLE);
 	} else {
-		drawCurrentPiece();
 		drawGhostPiece();
+		drawCurrentPiece();
 	}
 	
 	html('score', sscore);
