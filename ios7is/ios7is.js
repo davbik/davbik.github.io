@@ -268,7 +268,7 @@ var KEYS = {LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, A: 65, DEBUG: 192},
 	BLOCK_WIDTH = 32,							  // in pixels
 	BLOCK_HEIGHT = 32,
 	wellWidth = 10,								// width of the field in blocks
-	wellHeight = 18,							// height of the field in blocks
+	wellHeight = 18;							// height of the field in blocks
 
 //objects
 var	canvas = get('game'),						// canvas html element
